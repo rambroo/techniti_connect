@@ -1,0 +1,176 @@
+{
+ "actions": [],
+ "creation": "2026-10-13 22:09:08.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "group_name",
+  "enabled",
+  "cb1",
+  "purpose",
+  "sb_people",
+  "admin_name",
+  "admin_phone",
+  "cb2",
+  "approver_name",
+  "approver_phone",
+  "approver_user",
+  "sb_schedule",
+  "post_weekday",
+  "post_time",
+  "plan_days_before",
+  "cb3",
+  "repeat_after_days",
+  "slots"
+ ],
+ "fields": [
+  {
+   "fieldname": "group_name",
+   "fieldtype": "Data",
+   "label": "Group Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "0"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "purpose",
+   "fieldtype": "Small Text",
+   "label": "Purpose"
+  },
+  {
+   "fieldname": "sb_people",
+   "fieldtype": "Section Break",
+   "label": "People",
+   "description": "The admin receives each approved post on their WhatsApp and forwards it into the group. WhatsApp's official API cannot post into existing groups directly."
+  },
+  {
+   "fieldname": "admin_name",
+   "fieldtype": "Data",
+   "label": "Group Admin Name"
+  },
+  {
+   "fieldname": "admin_phone",
+   "fieldtype": "Data",
+   "label": "Group Admin WhatsApp Number",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "approver_name",
+   "fieldtype": "Data",
+   "label": "Approver Name"
+  },
+  {
+   "fieldname": "approver_phone",
+   "fieldtype": "Data",
+   "label": "Approver WhatsApp Number"
+  },
+  {
+   "fieldname": "approver_user",
+   "fieldtype": "Link",
+   "label": "Approver User (desk)",
+   "options": "User"
+  },
+  {
+   "fieldname": "sb_schedule",
+   "fieldtype": "Section Break",
+   "label": "Weekly Schedule"
+  },
+  {
+   "fieldname": "post_weekday",
+   "fieldtype": "Select",
+   "label": "Post On",
+   "options": "Monday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday",
+   "reqd": 1,
+   "default": "Sunday"
+  },
+  {
+   "fieldname": "post_time",
+   "fieldtype": "Time",
+   "label": "Post Time",
+   "default": "08:00:00",
+   "reqd": 1
+  },
+  {
+   "fieldname": "plan_days_before",
+   "fieldtype": "Int",
+   "label": "Ask for Approval (days before)",
+   "default": "2"
+  },
+  {
+   "fieldname": "cb3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "repeat_after_days",
+   "fieldtype": "Int",
+   "label": "Allow Repeat After (days)",
+   "default": "0",
+   "description": "0 = never post the same item in this group again"
+  },
+  {
+   "fieldname": "slots",
+   "fieldtype": "Table",
+   "label": "What to Post Each Week",
+   "options": "WhatsApp Group Slot",
+   "description": "Leave empty for a group that only receives share-check messages"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-13 22:09:08.000000",
+ "modified_by": "Administrator",
+ "module": "Techniti Connect",
+ "name": "WhatsApp Group",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "report": 1,
+   "print": 1,
+   "share": 1,
+   "email": 1
+  },
+  {
+   "role": "WhatsApp Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "report": 1,
+   "print": 1,
+   "share": 1,
+   "email": 1
+  },
+  {
+   "role": "WhatsApp Agent",
+   "read": 1,
+   "report": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:group_name",
+ "naming_rule": "By fieldname"
+}

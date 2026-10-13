@@ -1,0 +1,190 @@
+{
+ "actions": [],
+ "creation": "2026-10-13 22:09:08.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "content_type",
+  "status",
+  "cb1",
+  "groups",
+  "source_credit",
+  "sb_media",
+  "file",
+  "link",
+  "caption",
+  "sb_tracking",
+  "file_hash",
+  "image_hash",
+  "normalized_link",
+  "cb2",
+  "file_size",
+  "times_used",
+  "last_used_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "content_type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Photo\nVideo\nReel",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nRetired",
+   "default": "Active",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "groups",
+   "fieldtype": "Table MultiSelect",
+   "label": "Only For Groups",
+   "options": "Group Content Group",
+   "description": "Leave empty to allow in every group"
+  },
+  {
+   "fieldname": "source_credit",
+   "fieldtype": "Data",
+   "label": "Source / Credit"
+  },
+  {
+   "fieldname": "sb_media",
+   "fieldtype": "Section Break",
+   "label": "Media"
+  },
+  {
+   "fieldname": "file",
+   "fieldtype": "Attach",
+   "label": "Photo / Video File",
+   "description": "Photo: jpg/png/webp up to 5 MB. Video: mp4 up to 16 MB."
+  },
+  {
+   "fieldname": "link",
+   "fieldtype": "Data",
+   "label": "Link (Reel / YouTube)",
+   "options": "URL",
+   "description": "For reels: paste the link. WhatsApp shows a preview."
+  },
+  {
+   "fieldname": "caption",
+   "fieldtype": "Small Text",
+   "label": "Caption"
+  },
+  {
+   "fieldname": "sb_tracking",
+   "fieldtype": "Section Break",
+   "label": "Duplicate Check and Usage",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "file_hash",
+   "fieldtype": "Data",
+   "label": "File Fingerprint",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "image_hash",
+   "fieldtype": "Data",
+   "label": "Image Fingerprint",
+   "read_only": 1
+  },
+  {
+   "fieldname": "normalized_link",
+   "fieldtype": "Data",
+   "label": "Normalised Link",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "cb2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "file_size",
+   "fieldtype": "Int",
+   "label": "File Size (bytes)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "times_used",
+   "fieldtype": "Int",
+   "label": "Times Posted",
+   "read_only": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "last_used_on",
+   "fieldtype": "Date",
+   "label": "Last Posted On",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-13 22:09:08.000000",
+ "modified_by": "Administrator",
+ "module": "Techniti Connect",
+ "name": "Group Content",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "report": 1,
+   "print": 1,
+   "share": 1,
+   "email": 1
+  },
+  {
+   "role": "WhatsApp Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "report": 1,
+   "print": 1,
+   "share": 1,
+   "email": 1
+  },
+  {
+   "role": "WhatsApp Agent",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "format:GC-{#####}",
+ "title_field": "title",
+ "image_field": "file",
+ "naming_rule": "Expression"
+}

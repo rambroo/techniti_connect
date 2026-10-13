@@ -1,0 +1,191 @@
+{
+ "actions": [],
+ "creation": "2026-10-13 22:09:08.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "rule",
+  "source_date",
+  "share_date",
+  "cb1",
+  "status",
+  "shared_on_time",
+  "sb_msg",
+  "message_type",
+  "message_text",
+  "media_url",
+  "inbound_message",
+  "sb_track",
+  "received_on",
+  "sent_to_admin_on",
+  "shared_on",
+  "cb2",
+  "missing_alert_sent",
+  "escalated",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "rule",
+   "fieldtype": "Link",
+   "label": "Rule",
+   "options": "Share Check Rule",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "source_date",
+   "fieldtype": "Date",
+   "label": "Message Day",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "share_date",
+   "fieldtype": "Date",
+   "label": "Share Day",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "default": "Waiting for Message",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "options": "Waiting for Message\nReceived\nSent to Admin\nShared\nMissed"
+  },
+  {
+   "fieldname": "shared_on_time",
+   "fieldtype": "Check",
+   "label": "Shared On Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_msg",
+   "fieldtype": "Section Break",
+   "label": "Message"
+  },
+  {
+   "fieldname": "message_type",
+   "fieldtype": "Data",
+   "label": "Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "message_text",
+   "fieldtype": "Text",
+   "label": "Text"
+  },
+  {
+   "fieldname": "media_url",
+   "fieldtype": "Small Text",
+   "label": "Media URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "inbound_message",
+   "fieldtype": "Link",
+   "label": "Captured WhatsApp Message",
+   "options": "WhatsApp Message",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_track",
+   "fieldtype": "Section Break",
+   "label": "Tracking",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "received_on",
+   "fieldtype": "Datetime",
+   "label": "Received On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sent_to_admin_on",
+   "fieldtype": "Datetime",
+   "label": "Sent to Admin On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shared_on",
+   "fieldtype": "Datetime",
+   "label": "Shared On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "missing_alert_sent",
+   "fieldtype": "Check",
+   "label": "Missing Alert Sent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "escalated",
+   "fieldtype": "Check",
+   "label": "Escalated",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-13 22:09:08.000000",
+ "modified_by": "Administrator",
+ "module": "Techniti Connect",
+ "name": "Share Check",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "report": 1,
+   "print": 1,
+   "share": 1,
+   "email": 1
+  },
+  {
+   "role": "WhatsApp Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "report": 1,
+   "print": 1,
+   "share": 1,
+   "email": 1
+  },
+  {
+   "role": "WhatsApp Agent",
+   "read": 1,
+   "write": 1,
+   "report": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "source_date",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "format:SC-{YYYY}-{#####}",
+ "naming_rule": "Expression"
+}

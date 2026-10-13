@@ -1,0 +1,215 @@
+{
+ "actions": [],
+ "creation": "2026-10-13 22:09:08.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "direction",
+  "status",
+  "phone",
+  "contact_name",
+  "cb1",
+  "message_type",
+  "template_name",
+  "button_id",
+  "wamid",
+  "context_wamid",
+  "sb_content",
+  "text",
+  "media_url",
+  "payload",
+  "sb_ref",
+  "reference_doctype",
+  "reference_name",
+  "cb2",
+  "sent_or_received_at",
+  "processed",
+  "error",
+  "sb_raw",
+  "raw"
+ ],
+ "fields": [
+  {
+   "fieldname": "direction",
+   "fieldtype": "Select",
+   "label": "Direction",
+   "options": "In\nOut",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Received\nQueued\nHeld\nSent\nDelivered\nRead\nFailed",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "contact_name",
+   "fieldtype": "Data",
+   "label": "Contact Name"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "message_type",
+   "fieldtype": "Select",
+   "label": "Message Type",
+   "in_list_view": 1,
+   "options": "text\ntemplate\nimage\nvideo\ndocument\naudio\ninteractive\nbutton\ncta\nlocation\nsticker\ncontacts\nreaction\nunknown"
+  },
+  {
+   "fieldname": "template_name",
+   "fieldtype": "Data",
+   "label": "Template Name"
+  },
+  {
+   "fieldname": "button_id",
+   "fieldtype": "Data",
+   "label": "Button / Reply ID",
+   "description": "ID of the button the person tapped"
+  },
+  {
+   "fieldname": "wamid",
+   "fieldtype": "Data",
+   "label": "WhatsApp Message ID",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "context_wamid",
+   "fieldtype": "Data",
+   "label": "In Reply To (WhatsApp ID)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_content",
+   "fieldtype": "Section Break",
+   "label": "Content"
+  },
+  {
+   "fieldname": "text",
+   "fieldtype": "Text",
+   "label": "Text"
+  },
+  {
+   "fieldname": "media_url",
+   "fieldtype": "Small Text",
+   "label": "Media URL"
+  },
+  {
+   "fieldname": "payload",
+   "fieldtype": "Code",
+   "label": "Request Payload",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_ref",
+   "fieldtype": "Section Break",
+   "label": "Reference"
+  },
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "label": "Reference DocType",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Reference Name",
+   "options": "reference_doctype"
+  },
+  {
+   "fieldname": "cb2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sent_or_received_at",
+   "fieldtype": "Datetime",
+   "label": "Sent / Received At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "processed",
+   "fieldtype": "Check",
+   "label": "Processed",
+   "read_only": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_raw",
+   "fieldtype": "Section Break",
+   "label": "Raw",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "raw",
+   "fieldtype": "Code",
+   "label": "Raw Payload",
+   "options": "JSON",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-13 22:09:08.000000",
+ "modified_by": "Administrator",
+ "module": "Techniti Connect",
+ "name": "WhatsApp Message",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "report": 1,
+   "print": 1,
+   "share": 1,
+   "email": 1
+  },
+  {
+   "role": "WhatsApp Manager",
+   "read": 1,
+   "write": 1,
+   "report": 1,
+   "print": 1
+  },
+  {
+   "role": "WhatsApp Agent",
+   "read": 1,
+   "report": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0,
+ "autoname": "hash",
+ "title_field": "phone",
+ "naming_rule": "Random"
+}

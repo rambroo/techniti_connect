@@ -1,0 +1,193 @@
+{
+ "actions": [],
+ "creation": "2026-10-13 22:09:08.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "whatsapp_group",
+  "post_date",
+  "content_type",
+  "cb1",
+  "status",
+  "content",
+  "content_title",
+  "sb_msg",
+  "caption",
+  "preview",
+  "sb_track",
+  "approved_by",
+  "approved_on",
+  "swap_count",
+  "cb2",
+  "sent_to_admin_on",
+  "posted_on",
+  "reminder_sent",
+  "error"
+ ],
+ "fields": [
+  {
+   "fieldname": "whatsapp_group",
+   "fieldtype": "Link",
+   "label": "WhatsApp Group",
+   "options": "WhatsApp Group",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "post_date",
+   "fieldtype": "Date",
+   "label": "Post Date",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "content_type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Photo\nVideo\nReel",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "default": "Proposed",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "options": "Proposed\nApproved\nSkipped\nSent to Admin\nPosted\nMissed\nFailed"
+  },
+  {
+   "fieldname": "content",
+   "fieldtype": "Link",
+   "label": "Content",
+   "options": "Group Content"
+  },
+  {
+   "fieldname": "content_title",
+   "fieldtype": "Data",
+   "label": "Content Title",
+   "fetch_from": "content.title",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_msg",
+   "fieldtype": "Section Break",
+   "label": "Message"
+  },
+  {
+   "fieldname": "caption",
+   "fieldtype": "Small Text",
+   "label": "Caption"
+  },
+  {
+   "fieldname": "preview",
+   "fieldtype": "HTML",
+   "label": "Preview"
+  },
+  {
+   "fieldname": "sb_track",
+   "fieldtype": "Section Break",
+   "label": "Tracking",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Data",
+   "label": "Approved / Decided By",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Decided On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "swap_count",
+   "fieldtype": "Int",
+   "label": "Swaps",
+   "read_only": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "cb2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sent_to_admin_on",
+   "fieldtype": "Datetime",
+   "label": "Sent to Admin On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "posted_on",
+   "fieldtype": "Datetime",
+   "label": "Posted On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reminder_sent",
+   "fieldtype": "Check",
+   "label": "Reminder Sent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Small Text",
+   "label": "Error",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-13 22:09:08.000000",
+ "modified_by": "Administrator",
+ "module": "Techniti Connect",
+ "name": "Group Post",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "report": 1,
+   "print": 1,
+   "share": 1,
+   "email": 1
+  },
+  {
+   "role": "WhatsApp Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "report": 1,
+   "print": 1,
+   "share": 1,
+   "email": 1
+  },
+  {
+   "role": "WhatsApp Agent",
+   "read": 1,
+   "write": 1,
+   "report": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "post_date",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "format:GP-{YYYY}-{#####}",
+ "naming_rule": "Expression"
+}

@@ -1,0 +1,203 @@
+{
+ "actions": [],
+ "creation": "2026-10-13 22:09:08.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "rule_name",
+  "enabled",
+  "source_name",
+  "source_phones",
+  "cb1",
+  "whatsapp_group",
+  "escalate_name",
+  "escalate_phone",
+  "sb_days",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "cb2",
+  "friday",
+  "saturday",
+  "sunday",
+  "sb_times",
+  "forward_time",
+  "escalate_time",
+  "cb3",
+  "missing_alert_time"
+ ],
+ "fields": [
+  {
+   "fieldname": "rule_name",
+   "fieldtype": "Data",
+   "label": "Rule Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "0"
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Data",
+   "label": "Message Comes From",
+   "description": "e.g. Hitesh Sir"
+  },
+  {
+   "fieldname": "source_phones",
+   "fieldtype": "Small Text",
+   "label": "Accept Message From (numbers)",
+   "reqd": 1,
+   "description": "Comma-separated. The message is captured when one of these numbers sends or forwards it to the foundation's WhatsApp number."
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "whatsapp_group",
+   "fieldtype": "Link",
+   "label": "Share Into Group",
+   "options": "WhatsApp Group",
+   "reqd": 1,
+   "description": "The group's admin receives the message to forward"
+  },
+  {
+   "fieldname": "escalate_name",
+   "fieldtype": "Data",
+   "label": "Escalate To (name)"
+  },
+  {
+   "fieldname": "escalate_phone",
+   "fieldtype": "Data",
+   "label": "Escalate To (WhatsApp number)"
+  },
+  {
+   "fieldname": "sb_days",
+   "fieldtype": "Section Break",
+   "label": "Message Days",
+   "description": "Days on which the message is expected. It must be shared the next day."
+  },
+  {
+   "fieldname": "monday",
+   "fieldtype": "Check",
+   "label": "Monday"
+  },
+  {
+   "fieldname": "tuesday",
+   "fieldtype": "Check",
+   "label": "Tuesday",
+   "default": "1"
+  },
+  {
+   "fieldname": "wednesday",
+   "fieldtype": "Check",
+   "label": "Wednesday"
+  },
+  {
+   "fieldname": "thursday",
+   "fieldtype": "Check",
+   "label": "Thursday",
+   "default": "1"
+  },
+  {
+   "fieldname": "cb2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "friday",
+   "fieldtype": "Check",
+   "label": "Friday"
+  },
+  {
+   "fieldname": "saturday",
+   "fieldtype": "Check",
+   "label": "Saturday",
+   "default": "1"
+  },
+  {
+   "fieldname": "sunday",
+   "fieldtype": "Check",
+   "label": "Sunday"
+  },
+  {
+   "fieldname": "sb_times",
+   "fieldtype": "Section Break",
+   "label": "Times"
+  },
+  {
+   "fieldname": "forward_time",
+   "fieldtype": "Time",
+   "label": "Send to Admin At (next day)",
+   "default": "09:00:00",
+   "reqd": 1
+  },
+  {
+   "fieldname": "escalate_time",
+   "fieldtype": "Time",
+   "label": "Escalate If Not Shared By (next day)",
+   "default": "18:00:00",
+   "reqd": 1
+  },
+  {
+   "fieldname": "cb3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "missing_alert_time",
+   "fieldtype": "Time",
+   "label": "Alert If No Message By (same day)",
+   "default": "21:00:00",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-13 22:09:08.000000",
+ "modified_by": "Administrator",
+ "module": "Techniti Connect",
+ "name": "Share Check Rule",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "report": 1,
+   "print": 1,
+   "share": 1,
+   "email": 1
+  },
+  {
+   "role": "WhatsApp Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "export": 1,
+   "report": 1,
+   "print": 1,
+   "share": 1,
+   "email": 1
+  },
+  {
+   "role": "WhatsApp Agent",
+   "read": 1,
+   "report": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:rule_name",
+ "naming_rule": "By fieldname"
+}
