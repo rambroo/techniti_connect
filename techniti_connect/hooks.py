@@ -15,6 +15,12 @@ add_to_apps_screen = [
 	}
 ]
 
+# Desk assets
+# -----------
+# WhatsApp section on Donor / Website Donor forms. Loaded globally because Frappe does not
+# apply app form scripts (doctype_js) to custom DocTypes such as Donor.
+app_include_js = "record_whatsapp.bundle.js"
+
 # Installation
 # ------------
 before_install = "techniti_connect.install.before_install"

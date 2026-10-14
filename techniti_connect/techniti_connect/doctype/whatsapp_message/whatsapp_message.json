@@ -18,6 +18,12 @@
   "text",
   "media_url",
   "payload",
+  "sb_party",
+  "party_doctype",
+  "party_name",
+  "column_break_party",
+  "party_label",
+  "link_note",
   "sb_ref",
   "reference_doctype",
   "reference_name",
@@ -118,6 +124,44 @@
    "read_only": 1
   },
   {
+   "fieldname": "sb_party",
+   "fieldtype": "Section Break",
+   "label": "Linked To"
+  },
+  {
+   "fieldname": "party_doctype",
+   "fieldtype": "Link",
+   "label": "Linked DocType",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "party_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Linked Record",
+   "options": "party_doctype",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_party",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "party_label",
+   "fieldtype": "Data",
+   "label": "Linked Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "link_note",
+   "fieldtype": "Small Text",
+   "label": "Link Note",
+   "read_only": 1
+  },
+  {
    "fieldname": "sb_ref",
    "fieldtype": "Section Break",
    "label": "Reference"
@@ -173,7 +217,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-13 22:09:08.000000",
+ "modified": "2026-10-14 22:54:45.000000",
  "modified_by": "Administrator",
  "module": "Techniti Connect",
  "name": "WhatsApp Message",
