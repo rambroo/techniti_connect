@@ -21,7 +21,10 @@
   "cb2",
   "file_size",
   "times_used",
-  "last_used_on"
+  "last_used_on",
+  "auto_source",
+  "external_id",
+  "line_id"
  ],
  "fields": [
   {
@@ -136,11 +139,33 @@
    "fieldtype": "Date",
    "label": "Last Posted On",
    "read_only": 1
+  },
+  {
+   "fieldname": "auto_source",
+   "fieldtype": "Data",
+   "label": "Created Automatically From",
+   "read_only": 1,
+   "in_standard_filter": 1,
+   "description": "Quote Card / Pexels / YouTube. Empty = added by a person."
+  },
+  {
+   "fieldname": "external_id",
+   "fieldtype": "Data",
+   "label": "Source ID",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "line_id",
+   "fieldtype": "Data",
+   "label": "Line ID",
+   "read_only": 1,
+   "search_index": 1
   }
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-13 22:09:08.000000",
+ "modified": "2026-10-14 21:50:05.000000",
  "modified_by": "Administrator",
  "module": "Techniti Connect",
  "name": "Group Content",

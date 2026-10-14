@@ -49,6 +49,14 @@ def plan_group(group, post_date=None, force=False):
 	if frappe.db.exists("Group Post", {"whatsapp_group": group.name, "post_date": post_date}):
 		return []
 
+	if group.get("auto_content"):
+		from techniti_connect.content import autofill
+
+		needed = {}
+		for slot in group.slots:
+			needed[slot.content_type] = needed.get(slot.content_type, 0) + (slot.qty or 1)
+		autofill.ensure_stock(group, needed)
+
 	created, taken = [], []
 	for slot in group.slots:
 		for _i in range(slot.qty or 1):
@@ -121,8 +129,10 @@ def send_preview(group, post, index=None, total=None):
 	content = frappe.get_doc("Group Content", post.content) if post.content else None
 	label = f"{index}/{total} " if index else ""
 	if not content:
-		outbox.send(group.approver_phone, "text", contact_name=group.approver_name, reference=("Group Post", post.name),
-					text=f"{label}{post.content_type}: no unused content left for {group.name}. Please add more in Group Content.")
+		outbox.send(group.approver_phone, "buttons", contact_name=group.approver_name, reference=("Group Post", post.name),
+					text=f"{label}{post.content_type}: no unused content left for {group.name}. "
+					"Add more in Group Content, then Swap to fill this slot, or Skip it.",
+					buttons=[[f"gp:swap:{post.name}", "Swap"], [f"gp:skip:{post.name}", "Skip"]])
 		return
 	_send_content(group.approver_phone, group.approver_name, content, post.caption, ("Group Post", post.name))
 	outbox.send(group.approver_phone, "buttons", contact_name=group.approver_name, reference=("Group Post", post.name),
@@ -175,7 +185,15 @@ def _decide(post_name, status, by):
 	if status == "Approved" and not post.content:
 		frappe.throw(_("Nothing to approve: no content was picked. Swap or add content first."))
 	post.db_set({"status": status, "approved_by": by, "approved_on": now_datetime()})
+	if status == "Skipped":
+		_retire_if_auto(post.content)
 	return status
+
+
+def _retire_if_auto(content_name):
+	"""Automatically created items you swap or skip are not offered again; manual uploads stay."""
+	if content_name and frappe.db.get_value("Group Content", content_name, "auto_source"):
+		frappe.db.set_value("Group Content", content_name, "status", "Retired")
 
 
 def _swap(post_name, by, notify=True):
@@ -185,8 +203,15 @@ def _swap(post_name, by, notify=True):
 	group = frappe.get_doc("WhatsApp Group", post.whatsapp_group)
 	siblings = frappe.get_all("Group Post", filters={"whatsapp_group": group.name, "post_date": post.post_date,
 						  "name": ["!=", post.name]}, pluck="content")
-	rejected = (post.get("_swapped") or [])
-	new = pick_content(group, post.content_type, exclude=[post.content, *siblings, *rejected])
+	exclude = [post.content, *siblings]
+	new = pick_content(group, post.content_type, exclude=exclude)
+	if not new and group.get("auto_content"):
+		from techniti_connect.content import autofill
+
+		if autofill.create_one(group, post.content_type):
+			new = pick_content(group, post.content_type, exclude=exclude)
+	if new:
+		_retire_if_auto(post.content)
 	if not new:
 		if notify and group.approver_phone:
 			outbox.send(group.approver_phone, "text", contact_name=group.approver_name, reference=("Group Post", post.name),
@@ -296,11 +321,16 @@ def handle_button(msg, action, post_name):
 	who = msg.contact_name or msg.phone
 
 	if action in ("approve", "skip", "swap") and is_approver:
-		if action == "swap":
-			result = _swap(post_name, who)
-		else:
-			result = _decide(post_name, "Approved" if action == "approve" else "Skipped", who)
-			_reply(msg, f"{post_name}: {result}")
+		try:
+			if action == "swap":
+				result = _swap(post_name, who)
+				if result != "Swapped":
+					_reply(msg, f"{post_name}: {result}")
+			else:
+				result = _decide(post_name, "Approved" if action == "approve" else "Skipped", who)
+				_reply(msg, f"{post_name}: {result}")
+		except frappe.ValidationError as e:
+			_reply(msg, f"{post_name}: {frappe.utils.strip_html(str(e))}")
 	elif action == "posted" and (is_admin or is_approver):
 		mark_posted(post_name, who)
 		_reply(msg, f"Thanks! Marked as posted in {group.name}.")

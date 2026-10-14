@@ -12,6 +12,22 @@ WhatsApp Cloud API account.
 - **Notifications engine** (moved from the techniti app): WhatsApp Notification rules on any
   DocType, the WhatsApp Queue with retries, and date/time reminders.
 
+## Automatic content
+
+Tick **Create Content Automatically** on a WhatsApp Group and choose a theme (Faith (Mixed),
+Students, General Motivation). Before asking for approval each week, the app tops up that group's
+library itself:
+
+| Slot | Source |
+|---|---|
+| Photo | A new quote card (1080×1080) with a line that has never been used before. The background is a colour gradient, or a free Pexels photo when a Pexels key is set |
+| Video | A free-licence Pexels clip (landscape, ≤ 16 MB), or a YouTube link, alternating |
+| Reel | A free-licence Pexels clip (portrait), or a YouTube Shorts link, alternating |
+
+Nothing is posted without approval. Swap fetches a new item; automatically created items that are
+swapped or skipped are retired so they are not offered again. Keys go in **WhatsApp Setting →
+Automatic Content Sources** (both free: pexels.com/api and Google Cloud's YouTube Data API v3).
+
 ## Why posts go through the group admin
 
 WhatsApp's official API (which Sparklebot uses) cannot post into a group created in the WhatsApp

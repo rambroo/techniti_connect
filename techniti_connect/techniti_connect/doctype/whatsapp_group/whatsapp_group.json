@@ -21,6 +21,9 @@
   "plan_days_before",
   "cb3",
   "repeat_after_days",
+  "sb_auto",
+  "auto_content",
+  "content_theme",
   "slots"
  ],
  "fields": [
@@ -121,6 +124,26 @@
    "description": "0 = never post the same item in this group again"
   },
   {
+   "fieldname": "sb_auto",
+   "fieldtype": "Section Break",
+   "label": "Automatic Content",
+   "description": "When ticked, the app makes or finds the content itself before asking for approval: quote cards for photos, free-licence Pexels clips and YouTube links for videos and reels."
+  },
+  {
+   "fieldname": "auto_content",
+   "fieldtype": "Check",
+   "label": "Create Content Automatically",
+   "default": "0"
+  },
+  {
+   "fieldname": "content_theme",
+   "fieldtype": "Select",
+   "label": "Theme",
+   "options": "Faith (Mixed)\nStudents\nGeneral Motivation",
+   "default": "Faith (Mixed)",
+   "depends_on": "auto_content"
+  },
+  {
    "fieldname": "slots",
    "fieldtype": "Table",
    "label": "What to Post Each Week",
@@ -130,7 +153,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-13 22:09:08.000000",
+ "modified": "2026-10-14 21:50:05.000000",
  "modified_by": "Administrator",
  "module": "Techniti Connect",
  "name": "WhatsApp Group",

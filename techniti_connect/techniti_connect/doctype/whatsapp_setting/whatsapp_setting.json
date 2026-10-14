@@ -21,7 +21,11 @@
   "column_break_v2",
   "staff_alert_template",
   "staff_alert_language",
-  "log_incoming_raw"
+  "log_incoming_raw",
+  "sb_content",
+  "pexels_api_key",
+  "column_break_content",
+  "youtube_api_key"
  ],
  "fields": [
   {
@@ -125,13 +129,36 @@
    "fieldtype": "Check",
    "label": "Store Raw Webhook Payload",
    "default": "0"
+  },
+  {
+   "fieldname": "sb_content",
+   "fieldtype": "Section Break",
+   "label": "Automatic Content Sources"
+  },
+  {
+   "fieldname": "pexels_api_key",
+   "fieldtype": "Password",
+   "label": "Pexels API Key",
+   "length": 255,
+   "description": "Free at pexels.com/api. Used for video/reel clips and quote-card backgrounds. Without it, cards use colour backgrounds and videos/reels come from YouTube only."
+  },
+  {
+   "fieldname": "column_break_content",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "youtube_api_key",
+   "fieldtype": "Password",
+   "label": "YouTube Data API Key",
+   "length": 255,
+   "description": "Free from Google Cloud (YouTube Data API v3). Used to share links to short motivational videos."
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-13 22:07:49.000000",
+ "modified": "2026-10-14 21:50:05.000000",
  "modified_by": "Administrator",
  "module": "Techniti Connect",
  "name": "WhatsApp Setting",
