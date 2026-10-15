@@ -64,7 +64,7 @@
    "label": "Posting Method",
    "options": "Forward via Admin\nPost Directly",
    "default": "Forward via Admin",
-   "description": "Post Directly uses the separate group posting number (Group Posting Setting). If that number is disconnected, the post goes to the admin to forward instead."
+   "description": "Post Directly uses the group posting number linked in /connect > Groups. If it is not linked or a post fails, the post goes to the admin to forward instead."
   },
   {
    "fieldname": "group_chat_id",
@@ -180,7 +180,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-15 20:00:00.000000",
+ "modified": "2026-10-15 23:00:00.000000",
  "modified_by": "Administrator",
  "module": "Techniti Connect",
  "name": "WhatsApp Group",

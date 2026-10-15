@@ -2,22 +2,20 @@
 
 WhatsApp's official API cannot post into an existing group. Each group either has the approved post
 delivered to its admin's WhatsApp ready to forward, with a "Posted" button to confirm (Forward via Admin),
-or posted straight into the group by the separate group posting number on WAHA (Post Directly).
+or posted straight into the group by the separate linked group posting number (Post Directly).
 """
 
 import datetime
-import time
 
 import frappe
 from frappe import _
 from frappe.utils import add_days, formatdate, get_datetime, getdate, now_datetime, nowdate
 
-from techniti_connect.whatsapp import outbox, waha
+from techniti_connect.whatsapp import outbox
 
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 USED_STATUSES = ("Approved", "Sent to Admin", "Posted")
 REMIND_AFTER_HOURS = 3
-DIRECT_POST_GAP_SECONDS = 8
 
 
 # --------------------------------------------------------------------------- dates
@@ -254,7 +252,7 @@ def dispatch_due():
 	now = now_datetime()
 	rows = frappe.get_all("Group Post", filters={"status": ["in", ["Proposed", "Approved"]], "post_date": ["<=", nowdate()]},
 						  fields=["name", "whatsapp_group", "post_date", "status"], order_by="post_date asc, name asc")
-	direct = 0
+	direct = {}
 	for row in rows:
 		group = frappe.get_cached_doc("WhatsApp Group", row.whatsapp_group)
 		if post_datetime(group, row.post_date) > now:
@@ -264,10 +262,7 @@ def dispatch_due():
 				frappe.db.set_value("Group Post", row.name, {"status": "Skipped",
 									"error": f"Post day changed to {group.post_weekday}"})
 			elif row.status == "Approved" and group.get("posting_method") == "Post Directly":
-				if direct:
-					time.sleep(DIRECT_POST_GAP_SECONDS)
-				post_direct(row.name)
-				direct += 1
+				direct.setdefault(group.name, []).append(row.name)
 			elif row.status == "Approved":
 				send_to_admin(row.name)
 			else:
@@ -278,6 +273,9 @@ def dispatch_due():
 		except Exception:
 			frappe.log_error(title=f"Group post dispatch failed: {row.name}", message=frappe.get_traceback())
 	frappe.db.commit()
+	for group_name, names in direct.items():
+		frappe.enqueue("techniti_connect.groups.post_direct", queue="long", timeout=900, post_names=names,
+					   job_id=f"tc-direct-{frappe.local.site}-{group_name}", deduplicate=True)
 
 
 def send_to_admin(post_name):
@@ -295,40 +293,56 @@ def send_to_admin(post_name):
 				 "sent_to_admin_on": now_datetime(), "error": sent.error})
 
 
-def post_direct(post_name):
-	"""Post straight into the group from the group posting number (WAHA). Falls back to the admin."""
-	post = frappe.get_doc("Group Post", post_name)
-	group = frappe.get_doc("WhatsApp Group", post.whatsapp_group)
-	content = frappe.get_doc("Group Content", post.content)
-	problem = None
+def post_direct(post_names):
+	"""Background job: post approved posts straight into the group from the linked posting number.
+	Anything that cannot be posted goes to the group admin to forward, and the approver is told why."""
+	from techniti_connect.whatsapp import linked
+
+	posts = [frappe.get_doc("Group Post", n) for n in post_names]
+	posts = [p for p in posts if p.status == "Approved"]
+	if not posts:
+		return
+	group = frappe.get_doc("WhatsApp Group", posts[0].whatsapp_group)
+	problems = [None] * len(posts)
 	if not group.group_chat_id:
-		problem = "no WhatsApp group is chosen for it"
-	elif not waha.is_working():
-		problem = "the group posting number is not connected"
+		problems = ["no WhatsApp group is chosen for it"] * len(posts)
+	elif not linked.is_linked():
+		problems = ["the group posting number is not linked"] * len(posts)
 	else:
-		caption = _with_link(post.caption, content.link)
 		try:
-			if content.file:
-				kind = "image" if content.content_type == "Photo" else "video"
-				waha.send_file(group.group_chat_id, kind, outbox.public_url(content.file), caption=caption)
-			else:
-				waha.send_text(group.group_chat_id, caption or content.title)
-		except waha.WahaError as e:
-			problem = f"posting failed ({e})"
-	if problem:
-		frappe.log_error(title=f"Direct post failed: {post.name}", message=problem)
+			problems = linked.post_many(group.group_chat_id, [_direct_item(p) for p in posts])
+		except linked.LinkedError as e:
+			problems = [str(e)] * len(posts)
+		except Exception as e:
+			frappe.log_error(title=f"Direct post failed: {group.name}", message=frappe.get_traceback())
+			problems = [f"posting failed ({e.__class__.__name__})"] * len(posts)
+
+	failed = []
+	for post, problem in zip(posts, problems):
+		if not problem:
+			mark_posted(post.name, "Group posting number")
+			post.db_set("error", None)
+			continue
+		failed.append(f"{post.content_type}: {problem}")
 		if group.admin_phone:
-			send_to_admin(post_name)
+			send_to_admin(post.name)
 		else:
 			post.db_set({"status": "Failed", "error": problem[:500]})
-		if group.approver_phone:
-			outbox.send(group.approver_phone, "text", contact_name=group.approver_name, reference=("Group Post", post.name),
-						text=f"{post.content_type} for {group.name} could not be posted directly: {problem}. "
-						+ (f"It was sent to {group.admin_name or 'the admin'} to forward instead. " if group.admin_phone else "")
-						+ "Check the posting number in /connect > Groups.")
-		return
-	mark_posted(post.name, "Group posting number")
-	post.db_set("error", None)
+	if failed and group.approver_phone:
+		outbox.send(group.approver_phone, "text", contact_name=group.approver_name, reference=("WhatsApp Group", group.name),
+					text=f"Could not post directly into {group.name}:\n" + "\n".join(failed) + "\n"
+					+ (f"Sent to {group.admin_name or 'the admin'} to forward instead. " if group.admin_phone else "")
+					+ "Check the posting number in /connect > Groups.")
+	frappe.db.commit()
+
+
+def _direct_item(post):
+	content = frappe.get_doc("Group Content", post.content)
+	caption = _with_link(post.caption, content.link)
+	if content.file:
+		path = frappe.get_doc("File", {"file_url": content.file}).get_full_path()
+		return {"kind": "image" if content.content_type == "Photo" else "video", "path": path, "caption": caption}
+	return {"kind": "text", "text": caption or content.title}
 
 
 def _off_schedule(group, post_date):

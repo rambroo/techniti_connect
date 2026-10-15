@@ -55,9 +55,11 @@ app. Each WhatsApp Group chooses a **Posting Method**:
 
 - **Forward via Admin**: the approved post is sent to the admin's own WhatsApp, ready to forward.
   Tapping **Posted** records it.
-- **Post Directly**: a separate *group posting number*, linked to a self-hosted WAHA server, posts it
-  straight into the group and it is marked Posted. If that number is disconnected, the post goes to
-  the admin to forward instead. Its settings are on their own page, **Group Posting Setting**, apart from WhatsApp Setting. Setup: [docs/group-posting-number.md](docs/group-posting-number.md).
+- **Post Directly**: a separate *group posting number*, linked to the site as a WhatsApp linked device
+  (like WhatsApp Web, but run by the app itself on Frappe Cloud, with no extra server), posts it straight into the
+  group and it is marked Posted. If that number is not linked or a post fails, the post goes to the admin
+  to forward instead. Its status is on its own page, **Group Posting Setting**, apart from WhatsApp
+  Setting. Setup: [docs/group-posting-number.md](docs/group-posting-number.md).
 
 When a group's post day changes, pending posts planned for the old day are skipped.
 

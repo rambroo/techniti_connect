@@ -1,6 +1,7 @@
 """Backend for the /connect app. Every endpoint needs a WhatsApp role."""
 
 import datetime
+import json
 
 import frappe
 from frappe import _
@@ -9,7 +10,7 @@ from frappe.utils import add_days, add_to_date, get_datetime, getdate, now_datet
 from techniti_connect import groups as group_logic
 from techniti_connect import share_check
 from techniti_connect.api.ui import WA_ROLES
-from techniti_connect.whatsapp import outbox, waha
+from techniti_connect.whatsapp import linked, outbox
 from techniti_connect.whatsapp.phone import normalize_phone, phone_key
 
 
@@ -310,58 +311,56 @@ def set_posting(group, method, chat_id=None, chat_name=None):
 	return {"posting_method": doc.posting_method, "group_chat_id": doc.group_chat_id, "group_chat_name": doc.group_chat_name}
 
 
-# --------------------------------------------------------------------------- group posting number (WAHA)
+# --------------------------------------------------------------------------- group posting number
 
 @frappe.whitelist()
 def poster():
-	"""Connection state of the group posting number, with a QR code while it is waiting to be linked."""
+	"""Posting number status. While linking, includes the QR code to scan (as an SVG data URL)."""
 	_guard(manager=True)
-	if not waha.configured():
-		return {"configured": False}
-	try:
-		st = waha.status()
-	except waha.WahaError as e:
-		return {"configured": True, "status": "UNREACHABLE", "error": str(e)}
-	out = {"configured": True, "status": st["status"]}
-	me = st.get("me") or {}
-	if me:
-		out["number"] = "+" + str(me.get("id", "")).split("@")[0]
-		out["name"] = me.get("pushName")
-	if st["status"] == "SCAN_QR_CODE":
-		try:
-			out["qr"] = waha.qr_data_url()
-		except waha.WahaError as e:
-			out["error"] = str(e)
+	s = frappe.get_cached_doc("Group Posting Setting")
+	out = {"status": s.status or "Not linked", "number": s.linked_number, "name": s.linked_name,
+		   "last_checked": s.last_checked, "last_error": s.last_error,
+		   "group_count": len(json.loads(s.groups_json or "[]"))}
+	state = linked.linking_state()
+	if state and state.get("state") in ("starting", "qr", "failed"):
+		out["linking"] = state["state"]
+		out["error"] = state.get("error")
+		if state.get("qr"):
+			import segno
+
+			out["qr"] = segno.make(state["qr"], error="l").svg_data_uri(scale=5, border=2)
 	return out
 
 
 @frappe.whitelist(methods=["POST"])
-def poster_connect():
+def poster_link():
 	_guard(manager=True)
-	try:
-		waha.start()
-	except waha.WahaError as e:
-		frappe.throw(str(e))
+	linked._set_linking("starting")
+	frappe.enqueue("techniti_connect.whatsapp.linked.link_job", queue="long", timeout=linked.LINK_TIMEOUT + 180,
+				   job_id=f"tc-linked-link-{frappe.local.site}", deduplicate=True)
 	return poster()
 
 
 @frappe.whitelist(methods=["POST"])
-def poster_logout():
+def poster_refresh():
 	_guard(manager=True)
-	try:
-		waha.logout()
-	except waha.WahaError as e:
-		frappe.throw(str(e))
-	return poster()
+	frappe.enqueue("techniti_connect.whatsapp.linked.check_job", queue="long", timeout=300,
+				   job_id=f"tc-linked-check-{frappe.local.site}", deduplicate=True)
+	return {"queued": True}
+
+
+@frappe.whitelist(methods=["POST"])
+def poster_unlink():
+	_guard(manager=True)
+	frappe.enqueue("techniti_connect.whatsapp.linked.unlink_job", queue="long", timeout=300,
+				   job_id=f"tc-linked-unlink-{frappe.local.site}", deduplicate=True)
+	return {"queued": True}
 
 
 @frappe.whitelist()
 def poster_groups():
 	_guard(manager=True)
-	try:
-		return waha.groups()
-	except waha.WahaError as e:
-		frappe.throw(str(e))
+	return json.loads(frappe.db.get_single_value("Group Posting Setting", "groups_json") or "[]")
 
 
 @frappe.whitelist(methods=["POST"])

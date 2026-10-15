@@ -5,5 +5,4 @@ from frappe.model.document import Document
 
 
 class GroupPostingSetting(Document):
-	def validate(self):
-		self.waha_url = (self.waha_url or "").strip().rstrip("/") or None
+	pass

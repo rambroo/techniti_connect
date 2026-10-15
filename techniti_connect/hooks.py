@@ -65,6 +65,7 @@ scheduler_events = {
 	},
 	"hourly": ["techniti_connect.whatsapp.engine.process_scheduled_whatsapp_time_reminders"],
 	"daily": [
+		"techniti_connect.whatsapp.linked.daily_check",
 		"techniti_connect.groups.close_stale",
 		"techniti_connect.whatsapp.outbox.expire_held",
 	],

@@ -17,26 +17,29 @@
 				<span class="chip" :class="posterChip.color">{{ posterChip.label }}</span>
 			</div>
 			<p v-if="!poster" class="small muted">Checking…</p>
-			<p v-else-if="!poster.configured" class="small">
-				Not set up. Enter the WAHA server in <a href="/app/group-posting-setting">Group Posting Setting</a>.
-			</p>
 			<template v-else>
 				<p v-if="poster.error" class="small" style="color: var(--red)">{{ poster.error }}</p>
-				<div v-if="poster.status === 'WORKING'" class="row">
-					<span class="grow"><b>{{ poster.name || "Connected" }}</b> <span class="muted">{{ poster.number }}</span></span>
-					<button class="btn sm" :disabled="posterBusy" @click="posterLogout">Disconnect</button>
-				</div>
-				<div v-else-if="poster.status === 'SCAN_QR_CODE' && poster.qr" class="qr-wrap">
-					<img :src="poster.qr" alt="QR code to link the group posting number" width="220" height="220">
+				<div v-if="poster.linking === 'qr' && poster.qr" class="qr-wrap">
+					<img :src="poster.qr" alt="QR code to link the group posting number" width="230" height="230">
 					<ol class="small">
 						<li>On the phone with the posting number, open WhatsApp.</li>
 						<li>Settings → Linked devices → Link a device.</li>
-						<li>Scan this code. It refreshes by itself.</li>
+						<li>Scan this code. It refreshes by itself; you have 3 minutes.</li>
 					</ol>
 				</div>
-				<div v-else-if="poster.status === 'STARTING'" class="row"><div class="spinner"></div><span class="small muted">Starting…</span></div>
-				<div v-else-if="poster.status !== 'UNREACHABLE'" class="row">
-					<button class="btn primary" :disabled="posterBusy" @click="posterConnect">{{ posterBusy ? "Connecting…" : "Connect number" }}</button>
+				<div v-else-if="poster.linking === 'starting'" class="row"><div class="spinner"></div><span class="small muted">Getting a QR code from WhatsApp…</span></div>
+				<template v-else-if="poster.status === 'Linked'">
+					<div class="row">
+						<span class="grow"><b>{{ poster.name || "Linked" }}</b> <span class="muted">{{ poster.number }}</span></span>
+						<button class="btn sm" :disabled="posterBusy" @click="posterRefresh">Refresh groups</button>
+						<button class="btn sm" :disabled="posterBusy" @click="posterUnlink">Unlink</button>
+					</div>
+					<span class="xs muted">In {{ poster.group_count }} group{{ poster.group_count === 1 ? "" : "s" }}<template v-if="poster.last_checked"> · last connected {{ stamp(poster.last_checked) }}</template></span>
+					<span v-if="poster.last_error" class="xs" style="color: var(--amber)">Last problem: {{ poster.last_error }}</span>
+				</template>
+				<div v-else class="row">
+					<button class="btn primary" :disabled="posterBusy" @click="posterLink">Link number</button>
+					<span class="xs muted">Shows a QR code to scan from the posting phone, like WhatsApp Web.</span>
 				</div>
 			</template>
 		</section>
@@ -73,8 +76,8 @@
 							<option value="" disabled>Choose a group…</option>
 							<option v-for="c in chats" :key="c.id" :value="c.id">{{ c.name }}</option>
 						</select>
-						<span v-else-if="isManager && poster?.status === 'WORKING'" class="xs muted">{{ chatsLoading ? "Loading groups…" : "The posting number is in no groups yet" }}</span>
-						<span v-else-if="isManager" class="xs muted">Connect the posting number above to choose a group</span>
+						<span v-else-if="isManager && poster?.status === 'Linked'" class="xs muted">{{ chatsLoading ? "Loading groups…" : "The posting number is in no groups yet. Add it to the group, then Refresh groups" }}</span>
+						<span v-else-if="isManager" class="xs muted">Link the posting number above to choose a group</span>
 					</template>
 				</div>
 				<div v-if="g.slots.length" class="auto">
@@ -187,23 +190,24 @@ const chats = ref([]);
 const chatsLoading = ref(false);
 let posterTimer = null;
 const posterChip = computed(() => {
-	const s = poster.value?.status;
-	if (!poster.value) return { label: "…", color: "grey" };
-	if (!poster.value.configured) return { label: "Not set up", color: "grey" };
-	return ({ WORKING: { label: "Connected", color: "green" }, SCAN_QR_CODE: { label: "Waiting for scan", color: "amber" },
-		STARTING: { label: "Starting", color: "amber" }, UNREACHABLE: { label: "Server unreachable", color: "red" },
-		FAILED: { label: "Disconnected", color: "red" } })[s] || { label: "Not connected", color: "amber" };
+	const p = poster.value;
+	if (!p) return { label: "…", color: "grey" };
+	if (p.linking === "qr") return { label: "Waiting for scan", color: "amber" };
+	if (p.linking === "starting") return { label: "Starting", color: "amber" };
+	return p.status === "Linked" ? { label: "Linked", color: "green" } : { label: "Not linked", color: "grey" };
 });
-async function loadPoster() {
+async function loadPoster(poll = 0) {
 	clearTimeout(posterTimer);
+	const wasLinking = ["starting", "qr"].includes(poster.value?.linking);
 	try {
 		poster.value = await call("poster");
 	} catch (e) {
-		poster.value = { configured: true, status: "UNREACHABLE", error: e.message };
+		poster.value = { status: "Not linked", error: e.message };
 	}
-	const s = poster.value?.status;
-	if (s === "WORKING" && !chats.value.length) loadChats();
-	if (s === "SCAN_QR_CODE" || s === "STARTING") posterTimer = setTimeout(loadPoster, 5000);
+	const p = poster.value;
+	if (p.status === "Linked" && (!chats.value.length || wasLinking)) loadChats();
+	if (["starting", "qr"].includes(p.linking)) posterTimer = setTimeout(() => loadPoster(), 3000);
+	else if (poll > 0) posterTimer = setTimeout(() => loadPoster(poll - 1), 4000);
 }
 async function loadChats() {
 	chatsLoading.value = true;
@@ -214,27 +218,40 @@ async function loadChats() {
 	}
 	chatsLoading.value = false;
 }
-async function posterConnect() {
+async function posterLink() {
 	posterBusy.value = true;
 	try {
-		poster.value = await call("poster_connect", {}, { post: true });
+		poster.value = await call("poster_link", {}, { post: true });
 	} catch (e) {
 		toast(e.message, "err");
 	}
 	posterBusy.value = false;
 	loadPoster();
 }
-async function posterLogout() {
-	if (!confirm("Disconnect the posting number? Groups set to post directly will go to their admin until you reconnect.")) return;
+async function posterRefresh() {
 	posterBusy.value = true;
 	try {
-		poster.value = await call("poster_logout", {}, { post: true });
+		await call("poster_refresh", {}, { post: true });
+		toast("Checking the posting number…");
 		chats.value = [];
+		setTimeout(() => loadPoster(4), 4000);
 	} catch (e) {
 		toast(e.message, "err");
 	}
 	posterBusy.value = false;
-	loadPoster();
+}
+async function posterUnlink() {
+	if (!confirm("Unlink the posting number? Groups set to post directly will go to their admin until you link it again.")) return;
+	posterBusy.value = true;
+	try {
+		await call("poster_unlink", {}, { post: true });
+		chats.value = [];
+		toast("Unlinking…");
+		setTimeout(() => loadPoster(4), 3000);
+	} catch (e) {
+		toast(e.message, "err");
+	}
+	posterBusy.value = false;
 }
 async function setMethod(g, method) {
 	try {
