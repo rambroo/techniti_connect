@@ -46,8 +46,13 @@ def plan_group(group, post_date=None, force=False):
 		return []
 	if post_datetime(group, post_date) <= now_datetime():
 		return []
-	if frappe.db.exists("Group Post", {"whatsapp_group": group.name, "post_date": post_date}):
+	existing = frappe.get_all("Group Post", filters={"whatsapp_group": group.name, "post_date": post_date},
+							 fields=["name", "status", "content"])
+	if existing and (not force or any(p.content or p.status not in ("Proposed", "Skipped") for p in existing)):
 		return []
+	# "Plan next post" redoes a date whose slots all came out empty, now that there may be content
+	if existing:
+		frappe.db.delete("Group Post", {"name": ["in", [p.name for p in existing]]})
 
 	if group.get("auto_content"):
 		from techniti_connect.content import autofill
@@ -69,7 +74,7 @@ def plan_group(group, post_date=None, force=False):
 				"content": content.name if content else None,
 				"caption": content.caption if content else None,
 				"status": "Proposed",
-				"error": None if content else f"No unused {slot.content_type} left for this group - add more content",
+				"error": None if content else _empty_reason(group, slot.content_type),
 			}).insert(ignore_permissions=True)
 			if content:
 				taken.append(content.name)
@@ -78,6 +83,16 @@ def plan_group(group, post_date=None, force=False):
 	frappe.db.commit()
 	notify_approver(group, post_date, created)
 	return [p.name for p in created]
+
+
+def _empty_reason(group, content_type):
+	if group.get("auto_content") and content_type in ("Video", "Reel"):
+		from techniti_connect.content import sources
+
+		if not (sources.pexels_key() or sources.youtube_key()):
+			return (f"No {content_type} could be made automatically: add a Pexels or YouTube API key in "
+					"WhatsApp Setting, or upload one in Group Content")
+	return f"No unused {content_type} left for this group - add more content"
 
 
 def pick_content(group, content_type, exclude=None):
@@ -130,8 +145,8 @@ def send_preview(group, post, index=None, total=None):
 	label = f"{index}/{total} " if index else ""
 	if not content:
 		outbox.send(group.approver_phone, "buttons", contact_name=group.approver_name, reference=("Group Post", post.name),
-					text=f"{label}{post.content_type}: no unused content left for {group.name}. "
-					"Add more in Group Content, then Swap to fill this slot, or Skip it.",
+					text=f"{label}{post.content_type} for {group.name}: {post.error or 'no unused content left'}. "
+					"Then Swap to fill this slot, or Skip it.",
 					buttons=[[f"gp:swap:{post.name}", "Swap"], [f"gp:skip:{post.name}", "Skip"]])
 		return
 	_send_content(group.approver_phone, group.approver_name, content, post.caption, ("Group Post", post.name))
@@ -215,10 +230,11 @@ def _swap(post_name, by, notify=True):
 	if not new:
 		if notify and group.approver_phone:
 			outbox.send(group.approver_phone, "text", contact_name=group.approver_name, reference=("Group Post", post.name),
-						text=f"No other unused {post.content_type} available for {group.name}. Approve or Skip the current one.")
+						text=f"No other {post.content_type} available for {group.name}. "
+						+ (_empty_reason(group, post.content_type) if not post.content else "Approve or Skip the current one."))
 		return "No alternative"
 	post.db_set({"content": new.name, "content_title": new.title, "caption": new.caption, "status": "Proposed",
-				 "swap_count": (post.swap_count or 0) + 1, "approved_by": by, "approved_on": now_datetime()})
+				 "error": None, "swap_count": (post.swap_count or 0) + 1, "approved_by": by, "approved_on": now_datetime()})
 	if notify and group.approver_phone:
 		send_preview(group, frappe.get_doc("Group Post", post.name))
 	return "Swapped"
