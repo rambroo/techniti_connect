@@ -48,11 +48,18 @@ Nothing is posted without approval. Swap fetches a new item; automatically creat
 swapped or skipped are retired so they are not offered again. Keys go in **WhatsApp Setting →
 Automatic Content Sources** (both free: pexels.com/api and Google Cloud's YouTube Data API v3).
 
-## Why posts go through the group admin
+## How posts reach the group
 
 WhatsApp's official API (which Sparklebot uses) cannot post into a group created in the WhatsApp
-app. The approved post is sent to the admin's own WhatsApp, ready to forward. Tapping **Posted**
-records it.
+app. Each WhatsApp Group chooses a **Posting Method**:
+
+- **Forward via Admin**: the approved post is sent to the admin's own WhatsApp, ready to forward.
+  Tapping **Posted** records it.
+- **Post Directly**: a separate *group posting number*, linked to a self-hosted WAHA server, posts it
+  straight into the group and it is marked Posted. If that number is disconnected, the post goes to
+  the admin to forward instead. Setup: [docs/group-posting-number.md](docs/group-posting-number.md).
+
+When a group's post day changes, pending posts planned for the old day are skipped.
 
 ## Install
 

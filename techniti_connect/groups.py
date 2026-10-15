@@ -1,20 +1,23 @@
-"""Weekly WhatsApp group posts: plan -> approve -> send to group admin -> admin forwards -> Posted.
+"""Weekly WhatsApp group posts: plan -> approve -> post -> Posted.
 
-WhatsApp's official API cannot post into an existing group, so the approved post is delivered to the
-group admin's WhatsApp ready to forward, with a "Posted" button to confirm.
+WhatsApp's official API cannot post into an existing group. Each group either has the approved post
+delivered to its admin's WhatsApp ready to forward, with a "Posted" button to confirm (Forward via Admin),
+or posted straight into the group by the separate group posting number on WAHA (Post Directly).
 """
 
 import datetime
+import time
 
 import frappe
 from frappe import _
 from frappe.utils import add_days, formatdate, get_datetime, getdate, now_datetime, nowdate
 
-from techniti_connect.whatsapp import outbox
+from techniti_connect.whatsapp import outbox, waha
 
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 USED_STATUSES = ("Approved", "Sent to Admin", "Posted")
 REMIND_AFTER_HOURS = 3
+DIRECT_POST_GAP_SECONDS = 8
 
 
 # --------------------------------------------------------------------------- dates
@@ -121,7 +124,11 @@ def _used_in_group(group):
 	filters = {"whatsapp_group": group.name, "status": ["in", USED_STATUSES], "content": ["is", "set"]}
 	if group.repeat_after_days:
 		filters["post_date"] = [">=", add_days(nowdate(), -group.repeat_after_days)]
-	return set(frappe.get_all("Group Post", filters=filters, pluck="content"))
+	used = set(frappe.get_all("Group Post", filters=filters, pluck="content"))
+	# items already proposed for an upcoming date are not offered again for another date
+	used.update(frappe.get_all("Group Post", filters={"whatsapp_group": group.name, "status": "Proposed",
+							   "content": ["is", "set"], "post_date": [">=", nowdate()]}, pluck="content"))
+	return used
 
 
 # --------------------------------------------------------------------------- approval
@@ -243,16 +250,25 @@ def _swap(post_name, by, notify=True):
 # --------------------------------------------------------------------------- delivery
 
 def dispatch_due():
-	"""Every few minutes: send approved posts to the admin at post time; flag unapproved ones."""
+	"""Every few minutes: post (or send to the admin) approved posts at post time; flag unapproved ones."""
 	now = now_datetime()
 	rows = frappe.get_all("Group Post", filters={"status": ["in", ["Proposed", "Approved"]], "post_date": ["<=", nowdate()]},
-						  fields=["name", "whatsapp_group", "post_date", "status"])
+						  fields=["name", "whatsapp_group", "post_date", "status"], order_by="post_date asc, name asc")
+	direct = 0
 	for row in rows:
 		group = frappe.get_cached_doc("WhatsApp Group", row.whatsapp_group)
 		if post_datetime(group, row.post_date) > now:
 			continue
 		try:
-			if row.status == "Approved":
+			if _off_schedule(group, row.post_date):
+				frappe.db.set_value("Group Post", row.name, {"status": "Skipped",
+									"error": f"Post day changed to {group.post_weekday}"})
+			elif row.status == "Approved" and group.get("posting_method") == "Post Directly":
+				if direct:
+					time.sleep(DIRECT_POST_GAP_SECONDS)
+				post_direct(row.name)
+				direct += 1
+			elif row.status == "Approved":
 				send_to_admin(row.name)
 			else:
 				frappe.db.set_value("Group Post", row.name, {"status": "Missed", "error": "Not approved before post time"})
@@ -277,6 +293,58 @@ def send_to_admin(post_name):
 				text=f"Once you have posted it in {group.name}, confirm here.", buttons=[[f"gp:posted:{post.name}", "Posted"]])
 	post.db_set({"status": "Sent to Admin" if sent.status in ("Sent", "Held") else "Failed",
 				 "sent_to_admin_on": now_datetime(), "error": sent.error})
+
+
+def post_direct(post_name):
+	"""Post straight into the group from the group posting number (WAHA). Falls back to the admin."""
+	post = frappe.get_doc("Group Post", post_name)
+	group = frappe.get_doc("WhatsApp Group", post.whatsapp_group)
+	content = frappe.get_doc("Group Content", post.content)
+	problem = None
+	if not group.group_chat_id:
+		problem = "no WhatsApp group is chosen for it"
+	elif not waha.is_working():
+		problem = "the group posting number is not connected"
+	else:
+		caption = _with_link(post.caption, content.link)
+		try:
+			if content.file:
+				kind = "image" if content.content_type == "Photo" else "video"
+				waha.send_file(group.group_chat_id, kind, outbox.public_url(content.file), caption=caption)
+			else:
+				waha.send_text(group.group_chat_id, caption or content.title)
+		except waha.WahaError as e:
+			problem = f"posting failed ({e})"
+	if problem:
+		frappe.log_error(title=f"Direct post failed: {post.name}", message=problem)
+		if group.admin_phone:
+			send_to_admin(post_name)
+		else:
+			post.db_set({"status": "Failed", "error": problem[:500]})
+		if group.approver_phone:
+			outbox.send(group.approver_phone, "text", contact_name=group.approver_name, reference=("Group Post", post.name),
+						text=f"{post.content_type} for {group.name} could not be posted directly: {problem}. "
+						+ (f"It was sent to {group.admin_name or 'the admin'} to forward instead. " if group.admin_phone else "")
+						+ "Check the posting number in /connect > Groups.")
+		return
+	mark_posted(post.name, "Group posting number")
+	post.db_set("error", None)
+
+
+def _off_schedule(group, post_date):
+	return bool(group.post_weekday) and getdate(post_date).weekday() != WEEKDAYS.index(group.post_weekday)
+
+
+def cancel_off_schedule(group):
+	"""When a group's post day changes, pending posts planned for the old day are skipped."""
+	count = 0
+	for row in frappe.get_all("Group Post", filters={"whatsapp_group": group.name, "status": ["in", ["Proposed", "Approved"]],
+							  "post_date": [">=", nowdate()]}, fields=["name", "post_date"]):
+		if _off_schedule(group, row.post_date):
+			frappe.db.set_value("Group Post", row.name, {"status": "Skipped",
+								"error": f"Post day changed to {group.post_weekday}"})
+			count += 1
+	return count
 
 
 def remind_unposted():

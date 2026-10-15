@@ -9,7 +9,7 @@ from frappe.utils import add_days, add_to_date, get_datetime, getdate, now_datet
 from techniti_connect import groups as group_logic
 from techniti_connect import share_check
 from techniti_connect.api.ui import WA_ROLES
-from techniti_connect.whatsapp import outbox
+from techniti_connect.whatsapp import outbox, waha
 from techniti_connect.whatsapp.phone import normalize_phone, phone_key
 
 
@@ -240,7 +240,8 @@ def groups():
 	_guard()
 	out = []
 	for g in frappe.get_all("WhatsApp Group", fields=["name", "enabled", "purpose", "post_weekday", "post_time",
-							"admin_name", "admin_phone", "approver_name", "approver_phone", "auto_content", "content_theme"],
+							"admin_name", "admin_phone", "approver_name", "approver_phone", "auto_content", "content_theme",
+							"posting_method", "group_chat_id", "group_chat_name"],
 							order_by="name asc"):
 		doc = frappe.get_cached_doc("WhatsApp Group", g.name)
 		g["slots"] = [{"type": s.content_type, "qty": s.qty} for s in doc.slots]
@@ -292,6 +293,75 @@ def set_auto(group, enabled, theme=None):
 	doc.flags.ignore_mandatory = True
 	doc.save()
 	return doc.auto_content
+
+
+@frappe.whitelist(methods=["POST"])
+def set_posting(group, method, chat_id=None, chat_name=None):
+	_guard(manager=True)
+	if method not in ("Forward via Admin", "Post Directly"):
+		frappe.throw(_("Unknown posting method"))
+	doc = frappe.get_doc("WhatsApp Group", group)
+	doc.posting_method = method
+	if chat_id is not None:
+		doc.group_chat_id = chat_id or None
+		doc.group_chat_name = chat_name or None
+	doc.flags.ignore_mandatory = True
+	doc.save()
+	return {"posting_method": doc.posting_method, "group_chat_id": doc.group_chat_id, "group_chat_name": doc.group_chat_name}
+
+
+# --------------------------------------------------------------------------- group posting number (WAHA)
+
+@frappe.whitelist()
+def poster():
+	"""Connection state of the group posting number, with a QR code while it is waiting to be linked."""
+	_guard(manager=True)
+	if not waha.configured():
+		return {"configured": False}
+	try:
+		st = waha.status()
+	except waha.WahaError as e:
+		return {"configured": True, "status": "UNREACHABLE", "error": str(e)}
+	out = {"configured": True, "status": st["status"]}
+	me = st.get("me") or {}
+	if me:
+		out["number"] = "+" + str(me.get("id", "")).split("@")[0]
+		out["name"] = me.get("pushName")
+	if st["status"] == "SCAN_QR_CODE":
+		try:
+			out["qr"] = waha.qr_data_url()
+		except waha.WahaError as e:
+			out["error"] = str(e)
+	return out
+
+
+@frappe.whitelist(methods=["POST"])
+def poster_connect():
+	_guard(manager=True)
+	try:
+		waha.start()
+	except waha.WahaError as e:
+		frappe.throw(str(e))
+	return poster()
+
+
+@frappe.whitelist(methods=["POST"])
+def poster_logout():
+	_guard(manager=True)
+	try:
+		waha.logout()
+	except waha.WahaError as e:
+		frappe.throw(str(e))
+	return poster()
+
+
+@frappe.whitelist()
+def poster_groups():
+	_guard(manager=True)
+	try:
+		return waha.groups()
+	except waha.WahaError as e:
+		frappe.throw(str(e))
 
 
 @frappe.whitelist(methods=["POST"])

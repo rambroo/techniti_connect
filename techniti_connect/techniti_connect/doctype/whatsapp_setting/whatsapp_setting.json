@@ -25,7 +25,12 @@
   "sb_content",
   "pexels_api_key",
   "column_break_content",
-  "youtube_api_key"
+  "youtube_api_key",
+  "sb_waha",
+  "waha_url",
+  "waha_session",
+  "cb_waha",
+  "waha_api_key"
  ],
  "fields": [
   {
@@ -152,13 +157,42 @@
    "label": "YouTube Data API Key",
    "length": 255,
    "description": "Free from Google Cloud (YouTube Data API v3). Used to share links to short motivational videos."
+  },
+  {
+   "fieldname": "sb_waha",
+   "fieldtype": "Section Break",
+   "label": "Group Posting Number (WAHA)",
+   "collapsible": 1,
+   "description": "Optional. A separate WhatsApp number linked to a self-hosted WAHA server, used only to post approved content straight into groups. Connect it from /connect > Groups. Donor messages always use the official number above."
+  },
+  {
+   "fieldname": "waha_url",
+   "fieldtype": "Data",
+   "label": "WAHA Server URL",
+   "description": "e.g. https://waha.example.org"
+  },
+  {
+   "fieldname": "waha_session",
+   "fieldtype": "Data",
+   "label": "WAHA Session",
+   "default": "default"
+  },
+  {
+   "fieldname": "cb_waha",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "waha_api_key",
+   "fieldtype": "Password",
+   "label": "WAHA API Key",
+   "description": "The WAHA_API_KEY set on the server"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-14 21:50:05.000000",
+ "modified": "2026-10-15 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Techniti Connect",
  "name": "WhatsApp Setting",
