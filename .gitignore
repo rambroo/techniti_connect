@@ -6,3 +6,7 @@ tags
 node_modules
 __pycache__
 techniti_connect/public/dist
+node_modules
+frontend/node_modules
+techniti_connect/public/frontend
+techniti_connect/www/connect.html

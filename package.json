@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "name": "techniti_connect",
+  "scripts": {
+    "postinstall": "cd frontend && yarn install",
+    "build": "cd frontend && yarn build",
+    "dev": "cd frontend && yarn dev"
+  }
+}

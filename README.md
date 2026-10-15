@@ -12,6 +12,26 @@ WhatsApp Cloud API account.
 - **Notifications engine** (moved from the techniti app): WhatsApp Notification rules on any
   DocType, the WhatsApp Queue with retries, and date/time reminders.
 
+## The /connect app
+
+`https://<site>/connect` is a separate screen (like Frappe CRM's `/crm`) for people with the
+WhatsApp Manager or WhatsApp Agent role:
+
+| Page | What it does |
+|---|---|
+| Home | Posts waiting for approval, upcoming posts, share checks, recent messages |
+| Approvals | Each week's posts with previews: edit the caption, Approve / Swap / Skip, Approve all |
+| Inbox | Every WhatsApp conversation, linked to its Donor; reply while the 24-hour window is open |
+| Library | All content with filters; add photos, videos or links; generate content now |
+| Groups & Share Checks | Schedules, automatic-content switch, plan next post, share-check history |
+
+It is a Vue 3 app in `frontend/`. `bench build` runs `yarn build` (root `package.json`), which writes
+the assets to `techniti_connect/public/frontend/` and the page to `techniti_connect/www/connect.html`.
+For development: `cd frontend && yarn dev` (proxies to a bench on port 8015).
+
+Donor and Website Donor forms also get a WhatsApp section at the top (conversation, window status,
+reply box). Every message is linked automatically to the Donor whose number matches.
+
 ## Automatic content
 
 Tick **Create Content Automatically** on a WhatsApp Group and choose a theme (Faith (Mixed),

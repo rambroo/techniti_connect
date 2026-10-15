@@ -11,7 +11,7 @@ add_to_apps_screen = [
 		"name": "techniti_connect",
 		"logo": "/assets/techniti_connect/images/logo.svg",
 		"title": "Techniti Connect",
-		"route": "/app/techniti-connect",
+		"route": "/connect",
 	}
 ]
 
@@ -20,6 +20,11 @@ add_to_apps_screen = [
 # WhatsApp section on Donor / Website Donor forms. Loaded globally because Frappe does not
 # apply app form scripts (doctype_js) to custom DocTypes such as Donor.
 app_include_js = "record_whatsapp.bundle.js"
+
+# The /connect app (Vue, built from frontend/ into public/frontend + www/connect.html)
+website_route_rules = [
+	{"from_route": "/connect/<path:app_path>", "to_route": "connect"},
+]
 
 # Installation
 # ------------
