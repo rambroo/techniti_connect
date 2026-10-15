@@ -19,7 +19,7 @@ class WahaError(Exception):
 
 
 def settings():
-	s = frappe.get_cached_doc("WhatsApp Setting")
+	s = frappe.get_cached_doc("Group Posting Setting")
 	url = (s.get("waha_url") or "").strip().rstrip("/")
 	key = s.get_password("waha_api_key", raise_exception=False) if s.get("waha_url") else None
 	return url, key, (s.get("waha_session") or "default").strip()
@@ -32,7 +32,7 @@ def configured():
 def _call(method, path, timeout=TIMEOUT, **kwargs):
 	url, key, _session = settings()
 	if not url:
-		raise WahaError("The group posting number is not set up (WhatsApp Setting > Group Posting Number)")
+		raise WahaError("The group posting number is not set up (Group Posting Setting)")
 	headers = kwargs.pop("headers", {})
 	if key:
 		headers["X-Api-Key"] = key

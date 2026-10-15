@@ -18,7 +18,7 @@
 			</div>
 			<p v-if="!poster" class="small muted">Checking…</p>
 			<p v-else-if="!poster.configured" class="small">
-				Not set up. Enter the WAHA server in <a href="/app/whatsapp-setting">WhatsApp Setting → Group Posting Number</a>.
+				Not set up. Enter the WAHA server in <a href="/app/group-posting-setting">Group Posting Setting</a>.
 			</p>
 			<template v-else>
 				<p v-if="poster.error" class="small" style="color: var(--red)">{{ poster.error }}</p>

@@ -45,7 +45,7 @@ Run `docker compose up -d`. Caddy gets the HTTPS certificate itself. Generate th
 
 ## 2. Techniti
 
-1. **WhatsApp Setting → Group Posting Number**: WAHA Server URL `https://waha.wecanwewillfdn.org`,
+1. **Group Posting Setting** (its own page, separate from WhatsApp Setting): WAHA Server URL `https://waha.wecanwewillfdn.org`,
    WAHA Session `default`, WAHA API Key (the same string). Save.
 2. **/connect → Groups → Group posting number → Connect number**. A QR code appears.
 3. On the spare phone: WhatsApp → Settings → Linked devices → Link a device, and scan it. The card

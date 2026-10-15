@@ -1,0 +1,74 @@
+{
+ "actions": [],
+ "creation": "2026-10-15 20:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sb_about",
+  "waha_url",
+  "waha_session",
+  "cb1",
+  "waha_api_key"
+ ],
+ "fields": [
+  {
+   "fieldname": "sb_about",
+   "fieldtype": "Section Break",
+   "label": "Group Posting Number",
+   "description": "A separate WhatsApp number, linked to a self-hosted WAHA server, used only to post approved content straight into WhatsApp groups. It has nothing to do with the official WhatsApp number in WhatsApp Setting: donor messages, receipts and reminders never use it. Connect the number from /connect > Groups."
+  },
+  {
+   "fieldname": "waha_url",
+   "fieldtype": "Data",
+   "label": "WAHA Server URL",
+   "description": "e.g. https://waha.example.org"
+  },
+  {
+   "fieldname": "waha_session",
+   "fieldtype": "Data",
+   "label": "WAHA Session",
+   "default": "default"
+  },
+  {
+   "fieldname": "cb1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "waha_api_key",
+   "fieldtype": "Password",
+   "label": "WAHA API Key",
+   "description": "The WAHA_API_KEY set on the server"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-15 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Techniti Connect",
+ "name": "Group Posting Setting",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "print": 1,
+   "share": 1
+  },
+  {
+   "role": "WhatsApp Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "print": 1,
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
