@@ -27,7 +27,12 @@
 						<li>Scan this code. It refreshes by itself; you have 3 minutes.</li>
 					</ol>
 				</div>
-				<div v-else-if="poster.linking === 'starting'" class="row"><div class="spinner"></div><span class="small muted">Getting a QR code from WhatsApp…</span></div>
+				<div v-else-if="poster.linking === 'starting'" class="row"><div class="spinner"></div><span class="small muted">Connecting to WhatsApp…</span></div>
+				<div v-else-if="poster.linking === 'paired' || poster.linking === 'syncing'" class="row" style="flex-wrap: nowrap">
+					<div class="spinner"></div>
+					<span class="small">Phone linked. Syncing with your phone{{ poster.parts ? ` (${poster.parts} part${poster.parts === 1 ? "" : "s"} received)` : "" }}…
+						<span class="muted">Keep WhatsApp open on the phone. This takes up to 4 minutes.</span></span>
+				</div>
 				<template v-else-if="poster.status === 'Linked'">
 					<div class="row">
 						<span class="grow"><b>{{ poster.name || "Linked" }}</b> <span class="muted">{{ poster.number }}</span></span>
@@ -193,12 +198,13 @@ const posterChip = computed(() => {
 	const p = poster.value;
 	if (!p) return { label: "…", color: "grey" };
 	if (p.linking === "qr") return { label: "Waiting for scan", color: "amber" };
+	if (p.linking === "paired" || p.linking === "syncing") return { label: "Syncing", color: "amber" };
 	if (p.linking === "starting") return { label: "Starting", color: "amber" };
 	return p.status === "Linked" ? { label: "Linked", color: "green" } : { label: "Not linked", color: "grey" };
 });
 async function loadPoster(poll = 0) {
 	clearTimeout(posterTimer);
-	const wasLinking = ["starting", "qr"].includes(poster.value?.linking);
+	const wasLinking = ["starting", "qr", "paired", "syncing"].includes(poster.value?.linking);
 	try {
 		poster.value = await call("poster");
 	} catch (e) {
@@ -206,7 +212,7 @@ async function loadPoster(poll = 0) {
 	}
 	const p = poster.value;
 	if (p.status === "Linked" && (!chats.value.length || wasLinking)) loadChats();
-	if (["starting", "qr"].includes(p.linking)) posterTimer = setTimeout(() => loadPoster(), 3000);
+	if (["starting", "qr", "paired", "syncing"].includes(p.linking)) posterTimer = setTimeout(() => loadPoster(), 3000);
 	else if (poll > 0) posterTimer = setTimeout(() => loadPoster(poll - 1), 4000);
 }
 async function loadChats() {

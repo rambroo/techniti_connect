@@ -322,9 +322,10 @@ def poster():
 		   "last_checked": s.last_checked, "last_error": s.last_error,
 		   "group_count": len(json.loads(s.groups_json or "[]"))}
 	state = linked.linking_state()
-	if state and state.get("state") in ("starting", "qr", "failed"):
+	if state and state.get("state") in ("starting", "qr", "paired", "syncing", "failed"):
 		out["linking"] = state["state"]
 		out["error"] = state.get("error")
+		out["parts"] = state.get("parts")
 		if state.get("qr"):
 			import segno
 
@@ -336,7 +337,7 @@ def poster():
 def poster_link():
 	_guard(manager=True)
 	linked._set_linking("starting")
-	frappe.enqueue("techniti_connect.whatsapp.linked.link_job", queue="long", timeout=linked.LINK_TIMEOUT + 180,
+	frappe.enqueue("techniti_connect.whatsapp.linked.link_job", queue="long", timeout=900,
 				   job_id=f"tc-linked-link-{frappe.local.site}", deduplicate=True)
 	return poster()
 

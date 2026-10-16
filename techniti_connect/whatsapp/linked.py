@@ -19,6 +19,8 @@ import time
 import frappe
 from frappe.utils import now_datetime
 
+from techniti_connect.whatsapp.linked_runner import MARK, hard_limit
+
 SETTING = "Group Posting Setting"
 RUNNER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "linked_runner.py")
 CONNECT_TIMEOUT = 60
@@ -54,7 +56,7 @@ def linking_state():
 
 
 def _set_linking(state, **extra):
-	frappe.cache.set(_key("linking"), json.dumps({"state": state, **extra}), ex=LINK_TIMEOUT + 300)
+	frappe.cache.set(_key("linking"), json.dumps({"state": state, **extra}), ex=1800)
 
 
 def _save(**values):
@@ -69,10 +71,12 @@ def _save(**values):
 
 def _run(command, timeout, payload=None, on_event=None):
 	"""Run one task in its own process. Returns the events it reported; raises LinkedError on failure."""
-	if not frappe.cache.set(_key("lock"), "1", nx=True, ex=timeout + 120):
+	limit = hard_limit(command, timeout, payload)
+	if not frappe.cache.set(_key("lock"), "1", nx=True, ex=int(limit) + 180):
 		raise LinkedError("Another WhatsApp task for the posting number is still running", "busy")
 	events, lines = [], queue.Queue()
 	err = tempfile.TemporaryFile(mode="w+")
+	proc = None
 	try:
 		proc = subprocess.Popen([sys.executable, RUNNER, db_path(), command, str(timeout)], stdin=subprocess.PIPE,
 								stdout=subprocess.PIPE, stderr=err, text=True)
@@ -84,7 +88,7 @@ def _run(command, timeout, payload=None, on_event=None):
 				lines.put(ln)
 
 		threading.Thread(target=read, daemon=True).start()
-		deadline = time.time() + timeout + 120 + (len((payload or {}).get("items", [])) * (POST_GAP_SECONDS + 60))
+		deadline = time.time() + limit + 60  # the runner ends itself at its hard limit; this is the backstop
 		while time.time() < deadline:
 			try:
 				line = lines.get(timeout=1)
@@ -92,27 +96,36 @@ def _run(command, timeout, payload=None, on_event=None):
 				if proc.poll() is not None and lines.empty():
 					break
 				continue
+			if not line.startswith(MARK):
+				continue
 			try:
-				event = json.loads(line)
+				event = json.loads(line[len(MARK):])
 			except ValueError:
+				continue
+			if not isinstance(event, dict):
 				continue
 			events.append(event)
 			if on_event:
 				on_event(event)
 		if proc.poll() is None:
-			proc.kill()
 			raise LinkedError("The WhatsApp task took too long and was stopped", "timeout")
 		error = next((e for e in events if e.get("event") == "error"), None)
-		if error:
-			if error.get("kind") == "not_linked":
-				_mark_unlinked(error.get("message"))
-			raise LinkedError(error.get("message") or "WhatsApp task failed", error.get("kind") or "failed")
-		if proc.returncode:
-			err.seek(0)
-			frappe.log_error(title=f"Posting number task '{command}' failed", message=err.read()[-4000:])
-			raise LinkedError("The WhatsApp task stopped unexpectedly")
+		if error or proc.returncode:
+			message = (error or {}).get("message") or f"The WhatsApp task stopped unexpectedly (exit {proc.returncode})"
+			kind = (error or {}).get("kind") or "failed"
+			# keep the library's log for anything but the expected "not linked" answer to a check
+			if not (kind == "not_linked" and command != "link" and not is_linked()):
+				err.seek(0)
+				frappe.log_error(title=f"Posting number: {command} failed: {message}"[:140],
+								 message=f"{message}\n\nWhatsApp library log (last lines):\n{err.read()[-12000:]}")
+			if kind == "not_linked":
+				_mark_unlinked(message)
+			raise LinkedError(message, kind)
 		return events
 	finally:
+		if proc and proc.poll() is None:
+			proc.kill()
+			proc.wait(10)
 		err.close()
 		frappe.cache.delete(_key("lock"))
 
@@ -143,18 +156,37 @@ def _alert(text):
 # --------------------------------------------------------------------------- jobs
 
 def link_job():
-	"""Background job: show a QR code in /connect until the posting phone scans it."""
+	"""Background job: show a QR code in /connect until the posting phone scans it.
+
+	If a session from an earlier link is still on disk and WhatsApp accepts it, that link is used
+	and no QR code is needed."""
 	_set_linking("starting")
-	if os.path.exists(db_path()):
-		os.remove(db_path())
-
-	def on_event(event):
-		if event.get("event") == "qr":
-			_set_linking("qr", qr=event["code"])
-
 	try:
-		events = _run("link", LINK_TIMEOUT, on_event=on_event)
-		me = next(e for e in events if e.get("event") == "connected")
+		events = None
+		if os.path.exists(db_path()):
+			try:
+				events = _run("check", CONNECT_TIMEOUT)
+			except LinkedError as e:
+				if e.kind == "busy":
+					raise
+				events = None
+		if events is None:
+			for path in (db_path(), db_path() + "-journal", db_path() + "-wal", db_path() + "-shm"):
+				if os.path.exists(path):
+					os.remove(path)
+
+			def on_event(event):
+				if event.get("event") == "qr":
+					_set_linking("qr", qr=event.get("code"))
+				elif event.get("event") == "paired":
+					_set_linking("paired")
+				elif event.get("event") == "syncing":
+					_set_linking("syncing", parts=event.get("parts") or 0)
+
+			events = _run("link", LINK_TIMEOUT, on_event=on_event)
+		me = next((e for e in events if e.get("event") == "connected"), None)
+		if not me:
+			raise LinkedError("WhatsApp did not confirm the link")
 		_save(status="Linked", linked_number=me.get("number"), linked_name=me.get("name"), linked_on=now_datetime(),
 			  last_checked=now_datetime(), last_error=None, groups_json=_groups_json(events))
 		_set_linking("done")
@@ -189,8 +221,9 @@ def unlink_job():
 			_run("unlink", CONNECT_TIMEOUT)
 	except Exception:
 		frappe.log_error(title="Unlink posting number", message=frappe.get_traceback())
-	if os.path.exists(db_path()):
-		os.remove(db_path())
+	for path in (db_path(), db_path() + "-journal", db_path() + "-wal", db_path() + "-shm"):
+		if os.path.exists(path):
+			os.remove(path)
 	_save(status="Not linked", linked_number=None, linked_name=None, groups_json=None, last_error=None)
 	_set_linking("unlinked")
 
