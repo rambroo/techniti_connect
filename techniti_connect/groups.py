@@ -6,6 +6,7 @@ or posted straight into the group by the separate linked group posting number (P
 """
 
 import datetime
+import os
 
 import frappe
 from frappe import _
@@ -49,9 +50,10 @@ def plan_group(group, post_date=None, force=False):
 		return []
 	existing = frappe.get_all("Group Post", filters={"whatsapp_group": group.name, "post_date": post_date},
 							 fields=["name", "status", "content"])
-	if existing and (not force or any(p.content or p.status not in ("Proposed", "Skipped") for p in existing)):
+	redo = all(p.status == "Skipped" or (p.status == "Proposed" and not p.content) for p in existing)
+	if existing and (not force or not redo):
 		return []
-	# "Plan next post" redoes a date whose slots all came out empty, now that there may be content
+	# "Plan next post" redoes a date whose posts were all skipped or came out empty
 	if existing:
 		frappe.db.delete("Group Post", {"name": ["in", [p.name for p in existing]]})
 
@@ -113,9 +115,21 @@ def pick_content(group, content_type, exclude=None):
 		as_dict=True,
 	)
 	for row in allowed:
-		if row.name not in exclude and row.name not in used:
+		if row.name not in exclude and row.name not in used and _file_present(row):
 			return row
 	return None
+
+
+def _file_present(row):
+	"""Skip (and retire) items whose uploaded or generated file is gone, so a blank post is never proposed."""
+	if not row.file:
+		return True
+	rel = row.file.lstrip("/")  # "files/x.jpg" (public) or "private/files/x.jpg"
+	path = frappe.get_site_path(rel) if rel.startswith("private/") else frappe.get_site_path("public", rel)
+	if os.path.exists(path):
+		return True
+	frappe.db.set_value("Group Content", row.name, "status", "Retired")
+	return False
 
 
 def _used_in_group(group):
@@ -313,6 +327,8 @@ def post_direct(post_names):
 			problems = linked.post_many(group.group_chat_id, [_direct_item(p) for p in posts])
 		except linked.LinkedError as e:
 			problems = [str(e)] * len(posts)
+		except frappe.ValidationError as e:
+			problems = [str(e)] * len(posts)
 		except Exception as e:
 			frappe.log_error(title=f"Direct post failed: {group.name}", message=frappe.get_traceback())
 			problems = [f"posting failed ({e.__class__.__name__})"] * len(posts)
@@ -340,7 +356,11 @@ def _direct_item(post):
 	content = frappe.get_doc("Group Content", post.content)
 	caption = _with_link(post.caption, content.link)
 	if content.file:
-		path = frappe.get_doc("File", {"file_url": content.file}).get_full_path()
+		file_name = frappe.db.get_value("File", {"file_url": content.file})
+		path = frappe.get_doc("File", file_name).get_full_path() if file_name else None
+		if not path or not os.path.exists(path):
+			frappe.throw(_("The file of {0} ({1}) is missing. Retire it in the Library and plan again.").format(
+				content.name, content.file))
 		return {"kind": "image" if content.content_type == "Photo" else "video", "path": path, "caption": caption}
 	return {"kind": "text", "text": caption or content.title}
 

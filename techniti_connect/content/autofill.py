@@ -131,4 +131,13 @@ def _insert(group, ctype, title, caption, auto_source, line_id, external_id, sou
 		"source_credit": source_credit,
 	})
 	doc.insert(ignore_permissions=True)
+	if file:
+		attach_to_content(doc)
 	return doc
+
+
+def attach_to_content(doc):
+	"""Generated files are saved against the WhatsApp Group first; attach them to the library item, so
+	deleting a group never deletes images and clips the library still uses."""
+	frappe.db.set_value("File", {"file_url": doc.file, "attached_to_doctype": "WhatsApp Group"},
+						{"attached_to_doctype": "Group Content", "attached_to_name": doc.name, "attached_to_field": "file"})

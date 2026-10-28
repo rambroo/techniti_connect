@@ -40,11 +40,13 @@
 						</label>
 						<span class="xs muted" v-if="p.content_doc?.source_credit">{{ p.content_doc.source_credit }}</span>
 						<span class="xs muted" v-if="p.approved_by && p.status !== 'Proposed'">{{ p.status }} by {{ p.approved_by }}</span>
-						<div class="row actions" v-if="editable(p)">
+						<div class="row actions" v-if="editable(p) && p.status !== 'Approved'">
 							<button class="btn primary" style="flex: 1 1 0" :disabled="busy || !p.content" @click="act(p, 'approve')">Approve</button>
 							<button class="btn" :disabled="busy" @click="act(p, 'swap')">Swap</button>
 							<button class="btn" :disabled="busy" @click="act(p, 'skip')">Skip</button>
 						</div>
+						<button v-if="p.status === 'Approved' && isManager" class="btn primary" :disabled="busy" @click="sendNow(b, p)">
+							Send now{{ b.direct ? ` to ${b.target}` : " to admin" }}</button>
 						<div class="row actions" v-else-if="p.status === 'Sent to Admin'">
 							<button class="btn" :disabled="busy" @click="act(p, 'posted')">Mark posted</button>
 						</div>
@@ -56,9 +58,9 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import MediaPreview from "../components/MediaPreview.vue";
-import { call, fmtDate, refreshCounts, toast } from "../api.js";
+import { call, fmtDate, refreshCounts, store, toast } from "../api.js";
 
 const tabs = [
 	{ value: "Proposed", label: "Waiting" },
@@ -94,6 +96,20 @@ async function act(p, action) {
 		Object.assign(p, fresh);
 		toast({ approve: "Approved", skip: "Skipped", swap: "Swapped for a new pick", posted: "Marked posted" }[action]);
 		refreshCounts();
+	} catch (e) {
+		toast(e.message, "err");
+	}
+	busy.value = false;
+}
+const isManager = computed(() => store.boot?.is_manager);
+async function sendNow(b, p) {
+	const where = b.direct ? `straight into the WhatsApp group "${b.target}"` : `to ${b.admin || "the admin"} to forward`;
+	if (!confirm(`Send this ${p.content_type.toLowerCase()} now, ${where}?`)) return;
+	busy.value = true;
+	try {
+		const r = await call("send_now", { post_name: p.name }, { post: true });
+		toast(r.method === "direct" ? `Posting into ${r.target}… refresh in a minute` : `Sent to ${r.target || "the admin"}`);
+		setTimeout(load, 30000);
 	} catch (e) {
 		toast(e.message, "err");
 	}

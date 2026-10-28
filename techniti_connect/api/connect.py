@@ -102,7 +102,8 @@ def approvals(status="Proposed"):
 		if key not in batches:
 			g = frappe.get_cached_doc("WhatsApp Group", p.whatsapp_group)
 			batches[key] = {"group": g.name, "date": str(p.post_date), "time": str(g.post_time or "")[:5],
-							"approver": g.approver_name, "admin": g.admin_name, "posts": []}
+							"approver": g.approver_name, "admin": g.admin_name, "posts": [],
+							"direct": g.posting_method == "Post Directly", "target": g.group_chat_name or g.group_chat_id}
 		batches[key]["posts"].append({**p, "post_date": str(p.post_date), "content_doc": contents.get(p.content)})
 	return list(batches.values())
 
@@ -294,6 +295,22 @@ def set_auto(group, enabled, theme=None):
 	doc.flags.ignore_mandatory = True
 	doc.save()
 	return doc.auto_content
+
+
+@frappe.whitelist(methods=["POST"])
+def send_now(post_name):
+	"""Send an approved post now instead of waiting for the group's post time."""
+	_guard(manager=True)
+	post = frappe.get_doc("Group Post", post_name)
+	if post.status != "Approved":
+		frappe.throw(_("Only approved posts can be sent now"))
+	group = frappe.get_doc("WhatsApp Group", post.whatsapp_group)
+	if group.posting_method == "Post Directly":
+		frappe.enqueue("techniti_connect.groups.post_direct", queue="long", timeout=900, post_names=[post.name],
+					   job_id=f"tc-direct-now-{frappe.local.site}-{post.name}", deduplicate=True)
+		return {"method": "direct", "target": group.group_chat_name or group.group_chat_id}
+	group_logic.send_to_admin(post.name)
+	return {"method": "admin", "target": group.admin_name}
 
 
 @frappe.whitelist(methods=["POST"])

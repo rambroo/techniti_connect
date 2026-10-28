@@ -6,3 +6,4 @@
 # Patches added in this section will be executed after doctypes are migrated
 techniti_connect.patches.v1_2.link_messages_to_donors
 techniti_connect.patches.v1_4.skip_off_schedule_posts
+techniti_connect.patches.v1_5.attach_files_to_content
